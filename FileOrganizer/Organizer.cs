@@ -11,6 +11,7 @@ namespace FileOrganizer
     public static class Organizer
     {
         private static List<FOFile> _files = new List<FOFile>();
+        // TODO: Make extensions customizable
         private static List<string> _extensions = new List<string>()
         {
             ".doc", ".docx", ".pdf", ".ppt", ".pptx", ".xls", ".xlsx"
@@ -113,6 +114,8 @@ namespace FileOrganizer
                 ThreadPool.QueueUserWorkItem(ProcessFileBatch, batch);
 
                 // Wait for the counter to reach target
+                // When counter reaches target, all threads
+                // are done.
                 counter.Wait();
             }
             else

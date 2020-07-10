@@ -1,0 +1,14 @@
+C:\Users\zackm\source\repos\FileOrganizer\FileOrganizer\bin\Release\netcoreapp3.1\FileOrganizer.exe
+C:\Users\zackm\source\repos\FileOrganizer\FileOrganizer\bin\Release\netcoreapp3.1\FileOrganizer.deps.json
+C:\Users\zackm\source\repos\FileOrganizer\FileOrganizer\bin\Release\netcoreapp3.1\FileOrganizer.runtimeconfig.json
+C:\Users\zackm\source\repos\FileOrganizer\FileOrganizer\bin\Release\netcoreapp3.1\FileOrganizer.runtimeconfig.dev.json
+C:\Users\zackm\source\repos\FileOrganizer\FileOrganizer\bin\Release\netcoreapp3.1\FileOrganizer.dll
+C:\Users\zackm\source\repos\FileOrganizer\FileOrganizer\bin\Release\netcoreapp3.1\FileOrganizer.pdb
+C:\Users\zackm\source\repos\FileOrganizer\FileOrganizer\obj\Release\netcoreapp3.1\FileOrganizer.Form1.resources
+C:\Users\zackm\source\repos\FileOrganizer\FileOrganizer\obj\Release\netcoreapp3.1\FileOrganizer.csproj.GenerateResource.cache
+C:\Users\zackm\source\repos\FileOrganizer\FileOrganizer\obj\Release\netcoreapp3.1\FileOrganizer.AssemblyInfoInputs.cache
+C:\Users\zackm\source\repos\FileOrganizer\FileOrganizer\obj\Release\netcoreapp3.1\FileOrganizer.AssemblyInfo.cs
+C:\Users\zackm\source\repos\FileOrganizer\FileOrganizer\obj\Release\netcoreapp3.1\FileOrganizer.csproj.CoreCompileInputs.cache
+C:\Users\zackm\source\repos\FileOrganizer\FileOrganizer\obj\Release\netcoreapp3.1\FileOrganizer.dll
+C:\Users\zackm\source\repos\FileOrganizer\FileOrganizer\obj\Release\netcoreapp3.1\FileOrganizer.pdb
+C:\Users\zackm\source\repos\FileOrganizer\FileOrganizer\obj\Release\netcoreapp3.1\FileOrganizer.genruntimeconfig.cache

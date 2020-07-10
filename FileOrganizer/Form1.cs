@@ -13,14 +13,10 @@ namespace FileOrganizer
 {
     public partial class Form1 : Form
     {
-
-        
         public Form1()
         {
             InitializeComponent();
         }
-
-        
 
         private void organizeButton_Click(object sender, EventArgs e)
         {
@@ -31,6 +27,7 @@ namespace FileOrganizer
                 Organizer.OrganizeByAuthor = checkBox1.Checked;
                 Organizer.Frequency = FrequencyComboBox.SelectedItem.ToString();
                 Organizer.AddFolder(folderSelectTextBox.Text);
+                // TODO: this will be true in end
                 Organizer.Organize(false);
             }
         }
@@ -39,11 +36,11 @@ namespace FileOrganizer
         {
 
         }
-
         
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
             updatePreviewOrganize();
+            // TODO: Grey out and check author box when author is top-level
         }
 
         private void label1_Click(object sender, EventArgs e)
@@ -90,7 +87,7 @@ namespace FileOrganizer
             else
             {
                 generatePreviewButton.Enabled = false;
-                startOrganizeButton.Enabled = true;
+                startOrganizeButton.Enabled = false;
             }
         }
 
@@ -101,7 +98,6 @@ namespace FileOrganizer
 
         private void generatePreviewButton_Click(object sender, EventArgs e)
         {
-            
             
         }
 
