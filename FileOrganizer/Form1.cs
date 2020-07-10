@@ -23,12 +23,8 @@ namespace FileOrganizer
             DialogResult dr = MessageBox.Show($"Are you sure you want to reorganize {folderSelectTextBox.Text}?", "Confirm Action", MessageBoxButtons.YesNo);
             if (dr == DialogResult.Yes)
             {
-                Organizer.Folder = folderSelectTextBox.Text;
-                Organizer.OrganizeByAuthor = checkBox1.Checked;
-                Organizer.Frequency = FrequencyComboBox.SelectedItem.ToString();
-                Organizer.AddFolder(folderSelectTextBox.Text);
                 // TODO: this will be true in end
-                Organizer.Organize(false);
+                StartOrganize(false);
             }
         }
 
@@ -96,11 +92,39 @@ namespace FileOrganizer
             updatePreviewOrganize();
         }
 
+        // Does what organize button does, but then show preview tree
         private void generatePreviewButton_Click(object sender, EventArgs e)
         {
-            
+            StartOrganize(false);
+            Organizer.GeneratePreview();
+            Organizer.GeneratePreviewTree();
+            foreach (TreeNode node in Organizer.Nodes)
+            {
+                previewTree.Nodes.Add(node);
+            }
         }
 
+        private void StartOrganize(bool performMove)
+        {
+            Organizer.Folder = folderSelectTextBox.Text;
+            Organizer.OrganizeByAuthor = checkBox1.Checked;
+            Organizer.Frequency = FrequencyComboBox.SelectedItem.ToString();
+            Organizer.AddFolder(folderSelectTextBox.Text);
+            Organizer.Organize(performMove);
+        }
+
+        // TODO: Refactor this into Organizer class
+        private void GenerateTree(string path)
+        {
+            List<TreeNode> treeNodes = new List<TreeNode>(GenerateNodesRecursively(path));
+            currentTree.Nodes.Clear();
+            foreach (TreeNode node in treeNodes)
+            {
+                currentTree.Nodes.Add(node);
+            }
+        }
+        
+        // TODO: Refactor this into Organizer class
         private List<TreeNode>  GenerateNodesRecursively(string path)
         {
             List<TreeNode> treeNodes = new List<TreeNode>();
@@ -117,43 +141,28 @@ namespace FileOrganizer
             return treeNodes;
         }
 
+        private List<TreeNode> GeneratePreviewRecursively(List<FOFile> files)
+        {
+
+            return null;
+        }
+
         private void showTreeButton_Click(object sender, EventArgs e)
         {
             currentTree.Nodes.Add(new TreeNode("Generating Nodes..."));
-            List<TreeNode> treeNodes = new List<TreeNode>(GenerateNodesRecursively(folderSelectTextBox.Text));
-            currentTree.Nodes.Clear();
-            foreach (TreeNode node in treeNodes)
-            {
-                currentTree.Nodes.Add(node);
-            }
+            GenerateTree(folderSelectTextBox.Text);
 
+            // The following takes too long
             //currentTree.ExpandAll();
+
             currentTree.Nodes[0].EnsureVisible();
 
 
         }
 
-        private void wait(int milliseconds)
+        private void previewTree_AfterSelect(object sender, TreeViewEventArgs e)
         {
-            var timer1 = new System.Windows.Forms.Timer();
-            if (milliseconds == 0 || milliseconds < 0) return;
 
-            // Console.WriteLine("start wait timer");
-            timer1.Interval = milliseconds;
-            timer1.Enabled = true;
-            timer1.Start();
-
-            timer1.Tick += (s, e) =>
-            {
-                timer1.Enabled = false;
-                timer1.Stop();
-                // Console.WriteLine("stop wait timer");
-            };
-
-            while (timer1.Enabled)
-            {
-                Application.DoEvents();
-            }
         }
     }
 }

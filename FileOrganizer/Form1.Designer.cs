@@ -46,7 +46,7 @@
             this.restoreTextBox = new System.Windows.Forms.TextBox();
             this.restoreButton = new System.Windows.Forms.Button();
             this.currentTree = new System.Windows.Forms.TreeView();
-            this.treeView1 = new System.Windows.Forms.TreeView();
+            this.previewTree = new System.Windows.Forms.TreeView();
             this.currentTreeLabel = new System.Windows.Forms.Label();
             this.previewTreeLable = new System.Windows.Forms.Label();
             this.SuspendLayout();
@@ -210,12 +210,13 @@
             this.currentTree.Size = new System.Drawing.Size(326, 299);
             this.currentTree.TabIndex = 17;
             // 
-            // treeView1
+            // previewTree
             // 
-            this.treeView1.Location = new System.Drawing.Point(344, 176);
-            this.treeView1.Name = "treeView1";
-            this.treeView1.Size = new System.Drawing.Size(326, 299);
-            this.treeView1.TabIndex = 18;
+            this.previewTree.Location = new System.Drawing.Point(344, 176);
+            this.previewTree.Name = "previewTree";
+            this.previewTree.Size = new System.Drawing.Size(326, 299);
+            this.previewTree.TabIndex = 18;
+            this.previewTree.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.previewTree_AfterSelect);
             // 
             // currentTreeLabel
             // 
@@ -242,7 +243,7 @@
             this.ClientSize = new System.Drawing.Size(800, 516);
             this.Controls.Add(this.previewTreeLable);
             this.Controls.Add(this.currentTreeLabel);
-            this.Controls.Add(this.treeView1);
+            this.Controls.Add(this.previewTree);
             this.Controls.Add(this.currentTree);
             this.Controls.Add(this.restoreButton);
             this.Controls.Add(this.restoreTextBox);
@@ -286,7 +287,7 @@
         private System.Windows.Forms.TextBox restoreTextBox;
         private System.Windows.Forms.Button restoreButton;
         private System.Windows.Forms.TreeView currentTree;
-        private System.Windows.Forms.TreeView treeView1;
+        private System.Windows.Forms.TreeView previewTree;
         private System.Windows.Forms.Label currentTreeLabel;
         private System.Windows.Forms.Label previewTreeLable;
     }

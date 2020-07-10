@@ -13,6 +13,8 @@ namespace FileOrganizer
         private string _oldLocation;
         private string _movingTo;
         private string _author;
+        private string _name;
+        private string _newName;
         private DateTime _creationDate;
         private DateTime _lastModified;
         private int _creationYear;
@@ -39,6 +41,7 @@ namespace FileOrganizer
             _lastModified = File.GetLastWriteTime(_currentLocation);
             _creationYear = _creationDate.Year;
             _creationMonth = _creationDate.ToString("MMM");
+            _name = Path.GetFileName(_currentLocation);
             try
             {
                 _size = new FileInfo(_currentLocation).Length;
@@ -105,6 +108,17 @@ namespace FileOrganizer
         {
             get { return _size; }
             set { _size = value; }
+        }
+
+        public string Name
+        {
+            get { return _name; }
+        }
+
+        public string NewName
+        {
+            get { return _newName; }
+            set { _newName = value; }
         }
 
         public void SetMoveLocation(string folder)
