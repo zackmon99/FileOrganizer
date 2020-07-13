@@ -112,6 +112,7 @@ namespace FileOrganizer
             while (Organizer.getPreviewTreeProgress() != 100)
             {
                 progressBar1.Value = Organizer.getPreviewTreeProgress();
+                Thread.Sleep(200);
             }
             progressBar1.Value = Organizer.getPreviewTreeProgress();
             TreeNode nodes = (TreeNode)Organizer.PreviewTree.Clone();
@@ -124,13 +125,11 @@ namespace FileOrganizer
         private void StartOrganize(bool performMove)
         {
             Organizer.Reinitialize();
-            //startProgressBar();
             Organizer.Folder = folderSelectTextBox.Text;
             Organizer.OrganizeByAuthor = checkBox1.Checked;
             Organizer.Frequency = FrequencyComboBox.SelectedItem.ToString();
             Organizer.AddFolder(folderSelectTextBox.Text);
             Organizer.Organize(performMove);
-            //stopProgressBar();
         }
 
         // TODO: Refactor this into Organizer class
