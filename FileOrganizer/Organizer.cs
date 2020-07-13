@@ -20,99 +20,69 @@ namespace FileOrganizer
         {
             ".doc", ".docx", ".pdf", ".ppt", ".pptx", ".xls", ".xlsx"
         };
-        private static string _folder = "";
-        private static string _frequency = "";
-        private static bool _byAuthor = false;
-        private static long _totalSize = 0;
-        private static long _completedSize = 0;
-        private static object sizelock = new object();
         private static int processors = Environment.ProcessorCount;
+        private static bool _performMove = false;
         private static CountdownEvent counter;
         private static HashSet<int> _uniqueYears = new HashSet<int>();
-        private static object _yearMonthMapLock = new object();
-        private static Dictionary< int, Dictionary<string, HashSet<string> > > _yearMonthMap = new Dictionary<int, Dictionary<string, HashSet<string>>>();
-        private static List<TreeNode> _treeNodes = new List<TreeNode>();
-        private static object _nodeLock = new object();
-
-        private static bool _performMove = false;
-        private static Form1 _form;
-        private static TreeNode _previewTree = new TreeNode("ROOT") { Name = "ROOT" };
+        private static Dictionary< int, Dictionary<string, HashSet<string> > > _yearMonthMap = 
+            new Dictionary<int, Dictionary<string, HashSet<string>>>();
+        private static object sizelock = new object();
         private static object _treeLock = new object();
         private static int _previewTreeProgress = 0;
         
 
-        public static string Frequency
-        {
-            get { return _frequency; }
-            set { _frequency = value; }
-        }
 
-        public static bool OrganizeByAuthor
-        {
-            get { return _byAuthor; }
-            set { _byAuthor = value; }
-        }
+        public static string Frequency { get; set; } = "";
 
-        public static long TotalSize
-        {
-            get { return _totalSize; }
-        }
+        public static bool OrganizeByAuthor { get; set; } = false;
 
-        public static long CompletedSize
-        {
-            get { return _completedSize; }
-        }
+        public static long TotalSize { get; private set; } = 0;
 
-        public static string Folder
-        {
-            get { return _folder; }
-            set { _folder = value; }
-        }
+        public static long CompletedSize { get; private set; } = 0;
+
+        public static string Folder { get; set; } = "";
+
+        public static List<string> UnauthorizedFolders { get; set; } = new List<string>();
 
         public static List<FOFile> Files
         {
             get { return _files; }
         }
 
-        public static List<TreeNode> Nodes
-        {
-            get { return _treeNodes; }
-        }
-
-        public static Form1 Form
-        {
-            set { _form = value; }
-        }
-
-        public static TreeNode PreviewTree
-        {
-            get { return _previewTree; }
-        }
+        public static TreeNode PreviewTree { get; private set; } = new TreeNode("ROOT") { Name = "ROOT" };
 
 
         public static void Reinitialize()
         {
             _files = new List<FOFile>();
-            _folder = "";
-            _frequency = "";
+            Folder = "";
+            Frequency = "";
             lock (sizelock)
             {
-                _totalSize = 0;
-                _completedSize = 0;
+                TotalSize = 0;
+                CompletedSize = 0;
             }
             _uniqueYears = new HashSet<int>();
             _yearMonthMap = new Dictionary<int, Dictionary<string, HashSet<string>>>();
-            _treeNodes = new List<TreeNode>();
             _performMove = false;
-            _previewTree = new TreeNode("ROOT") { Name = "ROOT" };
+            PreviewTree = new TreeNode("ROOT") { Name = "ROOT" };
             _previewTreeProgress = 0;
         }
 
         public static void AddFolder(string path)
         {
-            
+
+            string[] fileArray;
             // Add files recursively by passing a path
-            string[] fileArray = Directory.GetFiles(path);
+            try
+            {
+                fileArray = Directory.GetFiles(path);
+            }
+            catch (UnauthorizedAccessException e)
+            {
+                UnauthorizedFolders.Add(path);
+                return;
+            }
             foreach(string fileString in fileArray)
             {
                 // Only take in files with certain extensions
@@ -140,7 +110,7 @@ namespace FileOrganizer
             _files.Add(file);
 
             // Add the file size to the count
-            _totalSize += file.Size;
+            TotalSize += file.Size;
 
             _uniqueYears.Add(file.CreationYear);
         }
@@ -180,7 +150,7 @@ namespace FileOrganizer
             {
                 foreach (FOFile file in _files)
                 {
-                    file.SetMoveLocation(_folder);
+                    file.SetMoveLocation(Folder);
                     if (_performMove)
                     {
                         // TODO: Uncomment this
@@ -193,11 +163,11 @@ namespace FileOrganizer
         // Get progress by looking at total size and completed size
         public static int getProgress()
         {
-            if(_totalSize == 0)
+            if(TotalSize == 0)
             {
                 return 0;
             }
-            int progress = (int)Math.Round((((double)_completedSize / _totalSize) * 100), MidpointRounding.AwayFromZero);
+            int progress = (int)Math.Round((((double)CompletedSize / TotalSize) * 100), MidpointRounding.AwayFromZero);
             return progress;
         }
 
@@ -242,7 +212,7 @@ namespace FileOrganizer
 
             for(int i = batch.Index; i < batch.Index + batch.Count; i++)
             {
-                _files[i].SetMoveLocation(_folder);
+                _files[i].SetMoveLocation(Folder);
                 if (_performMove)
                 {
                     // TODO: Uncomment this
@@ -302,17 +272,17 @@ namespace FileOrganizer
                 string year = _files[i].CreationYear.ToString();
                 string month = _files[i].CreationMonth;
                 lock (_treeLock) {
-                    if (!_previewTree.Nodes.ContainsKey(year))
+                    if (!PreviewTree.Nodes.ContainsKey(year))
                     {
-                        _previewTree.Nodes.Add(new TreeNode(year) { Name = year });
+                        PreviewTree.Nodes.Add(new TreeNode(year) { Name = year });
                     }
-                    if (!_previewTree.Nodes[year].Nodes.ContainsKey(month))
+                    if (!PreviewTree.Nodes[year].Nodes.ContainsKey(month))
                     {
-                        _previewTree.Nodes[year].Nodes.Add(new TreeNode(month) { Name = month });
+                        PreviewTree.Nodes[year].Nodes.Add(new TreeNode(month) { Name = month });
                     }
-                    if (!_previewTree.Nodes[year].Nodes[month].Nodes.ContainsKey(_files[i].Name))
+                    if (!PreviewTree.Nodes[year].Nodes[month].Nodes.ContainsKey(_files[i].Name))
                     {
-                        _previewTree.Nodes[year].Nodes[month].Nodes.Add(new TreeNode(_files[i].Name) { Name = _files[i].Name });
+                        PreviewTree.Nodes[year].Nodes[month].Nodes.Add(new TreeNode(_files[i].Name) { Name = _files[i].Name });
                         _previewTreeProgress++;
                     }
                     else
@@ -320,14 +290,14 @@ namespace FileOrganizer
                         string newName;
                         int k = 1;
                         newName = Path.GetFileNameWithoutExtension(_files[i].CurrentLocation) + ("({0})", k) + Path.GetExtension(_files[i].CurrentLocation);
-                        while (_previewTree.Nodes[year].Nodes[month].Nodes.ContainsKey(newName))
+                        while (PreviewTree.Nodes[year].Nodes[month].Nodes.ContainsKey(newName))
                         {
                             k++;
                             newName = Path.GetFileNameWithoutExtension(_files[i].CurrentLocation) + ("({0})", k) + Path.GetExtension(_files[i].CurrentLocation);
                         }
                         _files[i].NewName = newName;
 
-                        _previewTree.Nodes[year].Nodes[month].Nodes.Add(new TreeNode(newName) { Name = newName });
+                        PreviewTree.Nodes[year].Nodes[month].Nodes.Add(new TreeNode(newName) { Name = newName });
 
                         _previewTreeProgress++;
 

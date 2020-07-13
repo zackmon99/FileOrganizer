@@ -39,7 +39,7 @@ namespace FileOrganizer
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            Organizer.Form = this;
+
         }
         
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
@@ -104,21 +104,41 @@ namespace FileOrganizer
         // Does what organize button does, but then show preview tree
         private void generatePreviewButton_Click(object sender, EventArgs e)
         {
-            previewTree.Visible = false;
-            previewTree.Nodes.Clear();
-            previewTree.Visible = true;
-            StartOrganize(false);
-            Organizer.GeneratePreview();
-            while (Organizer.getPreviewTreeProgress() != 100)
+            if (!CheckFolderExist(folderSelectTextBox.Text))
             {
-                progressBar1.Value = Organizer.getPreviewTreeProgress();
-                Thread.Sleep(200);
+                MessageBox.Show($"{folderSelectTextBox.Text} is not a folder or does not exist.", "Error", MessageBoxButtons.OK);
+                return;
             }
-            progressBar1.Value = Organizer.getPreviewTreeProgress();
-            TreeNode nodes = (TreeNode)Organizer.PreviewTree.Clone();
-            foreach (TreeNode node in nodes.Nodes)
+            else
             {
-                previewTree.Nodes.Add(node);
+                previewTree.Visible = false;
+                previewTree.Nodes.Clear();
+                previewTree.Visible = true;
+                StartOrganize(false);
+                Organizer.GeneratePreview();
+                while (Organizer.getPreviewTreeProgress() != 100)
+                {
+                    progressBar1.Value = Organizer.getPreviewTreeProgress();
+                    Thread.Sleep(200);
+                }
+                progressBar1.Value = Organizer.getPreviewTreeProgress();
+                TreeNode nodes = (TreeNode)Organizer.PreviewTree.Clone();
+                foreach (TreeNode node in nodes.Nodes)
+                {
+                    previewTree.Nodes.Add(node);
+                }
+
+                if (Organizer.UnauthorizedFolders.Any())
+                {
+                    string UnauthorizedFolderString = "";
+                    foreach(string folder in Organizer.UnauthorizedFolders)
+                    {
+                        UnauthorizedFolderString += (folder + "\n");
+                    }
+
+                    MessageBox.Show($"Insufficient privileges to access the following folders:\n\n{UnauthorizedFolderString}", 
+                        "Error", MessageBoxButtons.OK);
+                }
             }
         }
 
@@ -135,11 +155,19 @@ namespace FileOrganizer
         // TODO: Refactor this into Organizer class
         private void GenerateTree(string path)
         {
-            List<TreeNode> treeNodes = new List<TreeNode>(GenerateNodesRecursively(path));
-            currentTree.Nodes.Clear();
-            foreach (TreeNode node in treeNodes)
+            if (!CheckFolderExist(folderSelectTextBox.Text))
             {
-                currentTree.Nodes.Add(node);
+                MessageBox.Show($"{folderSelectTextBox.Text} is not a folder or does not exist.", "Error", MessageBoxButtons.OK);
+                return;
+            }
+            else
+            {
+                List<TreeNode> treeNodes = new List<TreeNode>(GenerateNodesRecursively(path));
+                currentTree.Nodes.Clear();
+                foreach (TreeNode node in treeNodes)
+                {
+                    currentTree.Nodes.Add(node);
+                }
             }
         }
         
@@ -152,12 +180,20 @@ namespace FileOrganizer
             {
                 foreach(string subdirectory in subdirectories)
                 {
-
                     TreeNode tree = new TreeNode(Path.GetFileName(subdirectory), GenerateNodesRecursively(subdirectory).ToArray());
                     treeNodes.Add(tree);
                 }
             }
             return treeNodes;
+        }
+
+        private bool CheckFolderExist(string path)
+        {
+            if (!Directory.Exists(path))
+            {
+                return false;
+            }
+            return true;
         }
 
 
