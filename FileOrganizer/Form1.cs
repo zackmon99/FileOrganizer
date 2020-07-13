@@ -39,7 +39,7 @@ namespace FileOrganizer
 
         private void Form1_Load(object sender, EventArgs e)
         {
-
+            Organizer.Form = this;
         }
         
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
@@ -104,8 +104,17 @@ namespace FileOrganizer
         // Does what organize button does, but then show preview tree
         private void generatePreviewButton_Click(object sender, EventArgs e)
         {
+            previewTree.Visible = false;
+            previewTree.Nodes.Clear();
+            previewTree.Visible = true;
             StartOrganize(false);
-            TreeNode nodes = Organizer.GeneratePreview();
+            Organizer.GeneratePreview();
+            while (Organizer.getPreviewTreeProgress() != 100)
+            {
+                progressBar1.Value = Organizer.getPreviewTreeProgress();
+            }
+            progressBar1.Value = Organizer.getPreviewTreeProgress();
+            TreeNode nodes = (TreeNode)Organizer.PreviewTree.Clone();
             foreach (TreeNode node in nodes.Nodes)
             {
                 previewTree.Nodes.Add(node);
@@ -114,13 +123,14 @@ namespace FileOrganizer
 
         private void StartOrganize(bool performMove)
         {
-            startProgressBar();
+            Organizer.Reinitialize();
+            //startProgressBar();
             Organizer.Folder = folderSelectTextBox.Text;
             Organizer.OrganizeByAuthor = checkBox1.Checked;
             Organizer.Frequency = FrequencyComboBox.SelectedItem.ToString();
             Organizer.AddFolder(folderSelectTextBox.Text);
             Organizer.Organize(performMove);
-            stopProgressBar();
+            //stopProgressBar();
         }
 
         // TODO: Refactor this into Organizer class
@@ -151,11 +161,6 @@ namespace FileOrganizer
             return treeNodes;
         }
 
-        private List<TreeNode> GeneratePreviewRecursively(List<FOFile> files)
-        {
-
-            return null;
-        }
 
         private void showTreeButton_Click(object sender, EventArgs e)
         {
@@ -175,23 +180,6 @@ namespace FileOrganizer
 
         }
 
-        private void startProgressBar()
-        {
-            Organizer.ProgressBar = true;
-            Thread thread = new Thread(delegate ()
-            {
-                while (Organizer.ProgressBar)
-                {
-                    this.Invoke(updateProgress);
-                    Thread.Sleep(100);
-                }
-            });
-            thread.Start();
-        }
-
-        private void stopProgressBar()
-        {
-            Organizer.ProgressBar = false;
-        }
+    
     }
 }
