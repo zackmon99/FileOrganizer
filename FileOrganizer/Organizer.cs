@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
+using System.Windows.Forms.VisualStyles;
 
 namespace FileOrganizer
 {
@@ -17,9 +19,9 @@ namespace FileOrganizer
         {
             ".doc", ".docx", ".pdf", ".ppt", ".pptx", ".xls", ".xlsx"
         };
-        private static string _folder;
-        private static string _frequency;
-        private static bool _byAuthor;
+        private static string _folder = "";
+        private static string _frequency = "";
+        private static bool _byAuthor = false;
         private static long _totalSize = 0;
         private static long _completedSize = 0;
         private static object sizelock = new object();
@@ -30,6 +32,7 @@ namespace FileOrganizer
         private static Dictionary< int, Dictionary<string, HashSet<string> > > _yearMonthMap = new Dictionary<int, Dictionary<string, HashSet<string>>>();
         private static List<TreeNode> _treeNodes = new List<TreeNode>();
         private static object _nodeLock = new object();
+        private static bool _progressBarUpdate = false;
         
 
         public static string Frequency
@@ -70,10 +73,23 @@ namespace FileOrganizer
             get { return _treeNodes; }
         }
 
+        public static bool ProgressBar
+        {
+            get{ return _progressBarUpdate; }
+            set { _progressBarUpdate = value; }
+        }
+
         public static void Reinitialize()
         {
-            _folder = null;
-            _frequency = null;
+            _folder = "";
+            _frequency = "";
+            _totalSize = 0;
+            _completedSize = 0;
+            _uniqueYears = new HashSet<int>();
+            _yearMonthMapLock = new object();
+            _yearMonthMap = new Dictionary<int, Dictionary<string, HashSet<string>>>();
+            _treeNodes = new List<TreeNode>();
+            _progressBarUpdate = false;
         }
 
         public static void AddFolder(string path)
@@ -159,6 +175,10 @@ namespace FileOrganizer
         public static int getProgress()
         {
             // TODO: Implement progress bar.
+            if(_totalSize == 0)
+            {
+                return 0;
+            }
             int progress = (int)Math.Round((((double)_completedSize / _totalSize) * 100), MidpointRounding.AwayFromZero);
             return progress;
         }
@@ -174,6 +194,23 @@ namespace FileOrganizer
             return true;
         }
 
+        // Generates a TreeNode list that contains the directory structure of the given path
+        public static List<TreeNode> GenerateFolderNodesRecursively(string path)
+        {
+            List<TreeNode> treeNodes = new List<TreeNode>();
+            string[] subdirectories = Directory.GetDirectories(path);
+            if (!(subdirectories == null || subdirectories.Length == 0))
+            {
+                foreach (string subdirectory in subdirectories)
+                {
+
+                    TreeNode tree = new TreeNode(Path.GetFileName(subdirectory), GenerateFolderNodesRecursively(subdirectory).ToArray());
+                    treeNodes.Add(tree);
+                }
+            }
+            return treeNodes;
+        }
+
         private static void ProcessFileBatch(object o)
         {
 
@@ -187,14 +224,90 @@ namespace FileOrganizer
                 lock (sizelock)
                 {
                     _completedSize += _files[i].Size;
+                    
                 }
-            }
-
+            }            
             // Signal the counter
             batch.Evt.Signal();
         }
 
+        public static TreeNode GeneratePreview()
+        {
+            TreeNode tree = new TreeNode("ROOT") { Name = "ROOT" };
 
+            if (_files.Count > processors + 20)
+            {
+                // Creating as many threads as you have logical processors
+                int filesPerThread = _files.Count / (processors - 1);
+
+                // A countdown event so we can "Join" the threads from the
+                // threadpool.
+                counter = new CountdownEvent(processors);
+                int i = 0;
+                FileTreeBatch batch;
+                while (i < (_files.Count - filesPerThread))
+                {
+                    batch = new FileTreeBatch(i, filesPerThread, counter, tree);
+                    ThreadPool.QueueUserWorkItem(AddFileToTree, batch);
+                    i += filesPerThread;
+                }
+
+                // One more thread to get the remainder.
+                batch = new FileTreeBatch(i, _files.Count - i, counter, tree);
+                ThreadPool.QueueUserWorkItem(AddFileToTree, batch);
+
+                counter.Wait();
+            }
+            else
+            {
+                counter = new CountdownEvent(1);
+                FileTreeBatch batch = new FileTreeBatch(0, _files.Count, null, tree);
+                AddFileToTree(batch);
+            }
+
+            return tree;
+        }
+
+        public static void AddFileToTree(object o)
+        {
+            FileTreeBatch batch = o as FileTreeBatch;
+            for(int i = batch.Index; i < batch.Index + batch.Count; i++)
+            {
+                string year = _files[i].CreationYear.ToString();
+                string month = _files[i].CreationMonth;
+                lock (batch.TreeLock) {
+                    if (!batch.Tree.Nodes.ContainsKey(year))
+                    {
+                        batch.Tree.Nodes.Add(new TreeNode(year) { Name = year });
+                    }
+                    if (!batch.Tree.Nodes[year].Nodes.ContainsKey(month))
+                    {
+                        batch.Tree.Nodes[year].Nodes.Add(new TreeNode(month) { Name = month });
+                    }
+                    if (!batch.Tree.Nodes[year].Nodes[month].Nodes.ContainsKey(_files[i].Name))
+                    {
+                        batch.Tree.Nodes[year].Nodes[month].Nodes.Add(new TreeNode(_files[i].Name) { Name = _files[i].Name });
+                    }
+                    else
+                    {
+                        string newName;
+                        int k = 1;
+                        newName = Path.GetFileNameWithoutExtension(_files[i].CurrentLocation) + ("({0})", k) + Path.GetExtension(_files[i].CurrentLocation);
+                        while (batch.Tree.Nodes[year].Nodes[month].Nodes.ContainsKey(newName))
+                        {
+                            k++;
+                            newName = Path.GetFileNameWithoutExtension(_files[i].CurrentLocation) + ("({0})", k) + Path.GetExtension(_files[i].CurrentLocation);
+                        }
+                        _files[i].NewName = newName;
+
+                        batch.Tree.Nodes[year].Nodes[month].Nodes.Add(new TreeNode(newName) { Name = newName });
+                    }
+                }
+            }
+            batch.Evt.Signal();
+        }
+
+        /*
         public static void GeneratePreview()
         {
             foreach(int year in _uniqueYears)
@@ -298,6 +411,7 @@ namespace FileOrganizer
 
         public static void GeneratePreviewTree()
         {
+            
             Dictionary<int, Dictionary<string, HashSet<string>>>.KeyCollection yearKeys = _yearMonthMap.Keys;
             List<TreeNode> nodes = new List<TreeNode>();
             foreach(int yearKey in yearKeys) {
@@ -306,7 +420,11 @@ namespace FileOrganizer
             }
 
             _treeNodes = new List<TreeNode>(nodes);
+            
+
+
         }
+    */
 
         private static List<TreeNode> GetMonthsInYear(int year)
         {
@@ -392,6 +510,28 @@ namespace FileOrganizer
                 {
                     _nodes.Add(node);
                 }
+            }
+        }
+
+        internal class FileTreeBatch : FileBatch
+        {
+            private TreeNode _tree;
+            private static object _treeLock = new object();
+
+            internal FileTreeBatch(int index, int count, CountdownEvent evt, TreeNode tree) : base(index, count, evt)
+            {
+                _tree = tree;
+            }
+
+            internal TreeNode Tree
+            {
+                get { return _tree; }
+                set { _tree = value; }
+            }
+
+            internal object TreeLock
+            {
+                get { return _treeLock; }
             }
         }
     }

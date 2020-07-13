@@ -6,6 +6,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -13,9 +14,17 @@ namespace FileOrganizer
 {
     public partial class Form1 : Form
     {
+        public delegate void UpdateProgressBar();
+        public UpdateProgressBar updateProgress;
         public Form1()
         {
             InitializeComponent();
+            updateProgress = new UpdateProgressBar(UpdateProgress);
+        }
+
+        private void UpdateProgress()
+        {
+            progressBar1.Value = Organizer.getProgress();
         }
 
         private void organizeButton_Click(object sender, EventArgs e)
@@ -96,9 +105,8 @@ namespace FileOrganizer
         private void generatePreviewButton_Click(object sender, EventArgs e)
         {
             StartOrganize(false);
-            Organizer.GeneratePreview();
-            Organizer.GeneratePreviewTree();
-            foreach (TreeNode node in Organizer.Nodes)
+            TreeNode nodes = Organizer.GeneratePreview();
+            foreach (TreeNode node in nodes.Nodes)
             {
                 previewTree.Nodes.Add(node);
             }
@@ -106,11 +114,13 @@ namespace FileOrganizer
 
         private void StartOrganize(bool performMove)
         {
+            startProgressBar();
             Organizer.Folder = folderSelectTextBox.Text;
             Organizer.OrganizeByAuthor = checkBox1.Checked;
             Organizer.Frequency = FrequencyComboBox.SelectedItem.ToString();
             Organizer.AddFolder(folderSelectTextBox.Text);
             Organizer.Organize(performMove);
+            stopProgressBar();
         }
 
         // TODO: Refactor this into Organizer class
@@ -163,6 +173,25 @@ namespace FileOrganizer
         private void previewTree_AfterSelect(object sender, TreeViewEventArgs e)
         {
 
+        }
+
+        private void startProgressBar()
+        {
+            Organizer.ProgressBar = true;
+            Thread thread = new Thread(delegate ()
+            {
+                while (Organizer.ProgressBar)
+                {
+                    this.Invoke(updateProgress);
+                    Thread.Sleep(100);
+                }
+            });
+            thread.Start();
+        }
+
+        private void stopProgressBar()
+        {
+            Organizer.ProgressBar = false;
         }
     }
 }
